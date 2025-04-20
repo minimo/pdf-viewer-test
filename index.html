@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>PDFビューアー with リニアライゼーション切替</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    #adobe-dc-view {
+      height: 600px;
+      width: 100%;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+    label, input, button {
+      display: block;
+      margin: 8px 0;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 6px;
+    }
+  </style>
+  <script src="https://acrobatservices.adobe.com/view-sdk/viewer.js"></script>
+</head>
+<body>
+  <h2>PDFビューアー（保存 + リニアライゼーション切替）</h2>
+
+  <label for="clientId">Adobe Client ID:</label>
+  <input type="text" id="clientId" placeholder="YOUR_CLIENT_ID">
+
+  <label for="pdfUrl">PDFファイルのURL:</label>
+  <input type="text" id="pdfUrl" placeholder="https://example.com/sample.pdf">
+
+  <label>
+    <input type="checkbox" id="linearizedToggle">
+    リニアライゼーションを有効にする
+  </label>
+
+  <button onclick="saveSettings()">保存して表示</button>
+
+  <div id="adobe-dc-view"></div>
+
+  <script>
+    function saveSettings() {
+      const clientId = document.getElementById('clientId').value;
+      const pdfUrl = document.getElementById('pdfUrl').value;
+      const isLinearized = document.getElementById('linearizedToggle').checked;
+
+      if (!clientId || !pdfUrl) {
+        alert('両方の入力が必要です。');
+        return;
+      }
+
+      localStorage.setItem('pdfClientId', clientId);
+      localStorage.setItem('pdfUrl', pdfUrl);
+      localStorage.setItem('isLinearized', isLinearized);
+
+      renderPDF(clientId, pdfUrl, isLinearized);
+    }
+
+    function renderPDF(clientId, pdfUrl, isLinearized) {
+      if (!window.AdobeDC) return;
+
+      const adobeDCView = new AdobeDC.View({
+        clientId: clientId,
+        divId: "adobe-dc-view"
+      });
+
+      adobeDCView.previewFile({
+        content: {
+          location: {
+            url: pdfUrl
+          }
+        },
+        metaData: {
+          fileName: pdfUrl.split("/").pop()
+        },
+        isLinearized: isLinearized
+      }, {
+        embedMode: "SIZED_CONTAINER",
+        showDownloadPDF: false,
+        showAnnotationTools: false,
+        showPrintPDF: false,
+        defaultViewMode: "FIT_WIDTH"
+      });
+    }
+
+    document.addEventListener("adobe_dc_view_sdk.ready", function () {
+      const savedClientId = localStorage.getItem('pdfClientId');
+      const savedPdfUrl = localStorage.getItem('pdfUrl');
+      const savedLinearized = localStorage.getItem('isLinearized') === "true";
+
+      if (savedClientId && savedPdfUrl) {
+        document.getElementById('clientId').value = savedClientId;
+        document.getElementById('pdfUrl').value = savedPdfUrl;
+        document.getElementById('linearizedToggle').checked = savedLinearized;
+        renderPDF(savedClientId, savedPdfUrl, savedLinearized);
+      }
+    });
+  </script>
+</body>
+</html>
